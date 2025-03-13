@@ -1,0 +1,14 @@
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - cd eks-infra/dev/
+      - terraform init
+      - terraform validate
+      - terraform refresh
+  
+  build:
+    commands:
+      - pwd
+      - ls
+      - terraform apply --auto-approve
