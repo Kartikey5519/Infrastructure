@@ -1,0 +1,97 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mongodb-alerts
+  namespace: {{ template "kube-prometheus-stack.namespace" . }}
+  labels:
+    app: {{ template "kube-prometheus-stack.name" . }}
+      {{ include "kube-prometheus-stack.labels" . | indent 4 }}
+      {{- if .Values.defaultRules.labels }}
+      {{ toYaml .Values.defaultRules.labels | indent 4 }}
+      {{- end }}
+  {{- if .Values.defaultRules.annotations }}
+  annotations:
+    {{ toYaml .Values.defaultRules.annotations | indent 4 }}
+  {{- end }}
+spec:
+  groups:
+    - name: mongodb-backup-alerts
+      rules:
+
+        - alert: MongoDB-NoRecentBackup
+          expr: |
+            time() - max(kube_psmdb_backup_last_transition_timestamp{state="ready"}) by (dbcluster) > {{ .Values.customMongoDBRules.noRecentBackupWarningSeconds }}
+          for: 15m
+          labels:
+            severity: warning
+            dbcluster: "{{`{{`}} $labels.dbcluster {{`}}`}}"
+          annotations:
+            summary: "No successful MongoDB backup in last 1 hour for cluster {{`{{`}} $labels.dbcluster {{`}}`}}"
+            description: |
+              The last successful backup for MongoDB has not occurred within the last 1 hour.
+              Investigate potential issues with the backup process.
+
+        - alert: MongoDB-NoRecentBackup
+          expr: |
+            time() - max(kube_psmdb_backup_last_transition_timestamp{state="ready"}) by (dbcluster) > {{ .Values.customMongoDBRules.noRecentBackupCriticalSeconds }}
+          for: 15m
+          labels:
+            severity: critical-main-channel
+            dbcluster: "{{`{{`}} $labels.dbcluster {{`}}`}}"
+          annotations:
+            summary: "No successful MongoDB backup in last 4 hours for cluster {{`{{`}} $labels.dbcluster {{`}}`}}"
+            description: |
+              The last successful backup for MongoDB has not occurred within the last 4 hours.
+              Investigate potential issues with the backup process.
+
+        - alert: MongoDB-ClusterNotReady
+          expr: kube_psmdb_status_state{state="ready"} != 1
+          for: 5m
+          labels:
+            severity: critical-main-channel
+            dbcluster: "{{`{{`}} $labels.name {{`}}`}}"
+            namespace: "{{`{{`}} $labels.namespace {{`}}`}}"
+          annotations:
+            summary: "Cluster {{`{{`}} $labels.name {{`}}`}} in {{`{{`}} $labels.namespace {{`}}`}} is not ready"
+            description: |
+              The cluster '{{`{{`}} $labels.name {{`}}`}}' in the namespace '{{`{{`}} $labels.namespace {{`}}`}}' is not in the 'ready' state.
+              Current state: {{`{{`}} $labels.state {{`}}`}}
+
+        - alert: MongoDB-MongosNotReady
+          expr: kube_psmdb_status_mongos_status{state="ready"} != 1
+          for: 5m
+          labels:
+            severity: critical-main-channel
+            dbcluster: "{{`{{`}} $labels.name {{`}}`}}"
+            namespace: "{{`{{`}} $labels.namespace {{`}}`}}"
+          annotations:
+            summary: "Mongos in cluster {{`{{`}} $labels.name {{`}}`}} ({{`{{`}} $labels.namespace {{`}}`}}) is not ready"
+            description: |
+              The Mongos in cluster '{{`{{`}} $labels.name {{`}}`}}' within the namespace '{{`{{`}} $labels.namespace {{`}}`}}' is not in the 'ready' state.
+              Current state: {{`{{`}} $labels.state {{`}}`}}
+
+        - alert: MongoDB-CfgNotReady
+          expr: kube_psmdb_status_replsets_cfg_status{state="ready"} != 1
+          for: 5m
+          labels:
+            severity: critical-main-channel
+            dbcluster: "{{`{{`}} $labels.name {{`}}`}}"
+            namespace: "{{`{{`}} $labels.namespace {{`}}`}}"
+          annotations:
+            summary: "Config server in cluster {{`{{`}} $labels.name {{`}}`}} ({{`{{`}} $labels.namespace {{`}}`}}) is not ready"
+            description: |
+              The config server in cluster '{{`{{`}} $labels.name {{`}}`}}' within the namespace '{{`{{`}} $labels.namespace {{`}}`}}' is not in the 'ready' state.
+              Current state: {{`{{`}} $labels.state {{`}}`}}
+
+        - alert: MongoDB-ReplicaSetNotReady
+          expr: kube_psmdb_status_replsets_rs0_status{state="ready"} != 1
+          for: 5m
+          labels:
+            severity: critical-main-channel
+            dbcluster: "{{`{{`}} $labels.name {{`}}`}}"
+            namespace: "{{`{{`}} $labels.namespace {{`}}`}}"
+          annotations:
+            summary: "Replica set in cluster {{`{{`}} $labels.name {{`}}`}} ({{`{{`}} $labels.namespace {{`}}`}}) is not ready"
+            description: |
+              The replica set in cluster '{{`{{`}} $labels.name {{`}}`}}' within the namespace '{{`{{`}} $labels.namespace {{`}}`}}' is not in the 'ready' state.
+              Current state: {{`{{`}} $labels.state {{`}}`}}

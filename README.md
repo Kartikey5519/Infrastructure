@@ -1,3 +1,23 @@
+## Purpose and Expectations
+This repository is designed to automate infrastructure deployment and management using Terraform and CI/CD pipelines. 
+The primary goals are:
+- Ensure consistent infrastructure provisioning.
+- Enable easy scaling and modification of infrastructure.
+- Automate deployment using CI/CD for increased efficiency and reduced human error.
+- Centralize infrastructure state and configurations for better traceability.
+
+## Infrastructure Tools Purpose and Expectations
+This repository also includes infrastructure tools to enhance cluster management, monitoring, and security:
+
+### **Ingress NGINX**  
+- Provides external access to Kubernetes services using HTTP and HTTPS.
+- Enables traffic routing based on host and path-based rules.
+- Ensures secure communication using TLS.
+
+### **Prometheus and Grafana**  
+- Prometheus collects and stores real-time metrics from Kubernetes components and applications.
+- Grafana provides a user-friendly interface for visualizing metrics and creating dashboards.
+- Alertmanager handles alerts based on Prometheus metrics for proactive issue resolution.
 
 # Infrastructure Overview
 
@@ -126,3 +146,96 @@ The `templates` folder contains user data templates used for bootstrapping nodes
 - Ensure that Terraform backend configuration is properly set up in `backend.tf`.
 - Make sure IAM roles and permissions are correctly assigned for deployment.
 - Review logs after deployment to validate the infrastructure state.
+## Infrastructure Tools
+The `Infra-tools` directory includes configurations for monitoring and alerting using Prometheus and Grafana.
+
+### **Prometheus Chart**
+- **prometheus-windows-exporter** – Prometheus exporter for monitoring Windows-based nodes.
+- **alertmanager** – Configuration for handling alerts from Prometheus.
+- **grafana** – Dashboard configurations for monitoring Kubernetes clusters.
+- **exporters** – Exporter configurations for Kubernetes components like API Server, Scheduler, etc.
+- **thanos-ruler** – Configuration for Thanos Ruler to extend Prometheus monitoring capabilities.
+
+### **Key Components:**
+- **Templates** – Helm templates for setting up Prometheus, Grafana, and Alertmanager.
+- **ServiceMonitors** – Define how Prometheus scrapes metrics from Kubernetes services.
+- **Rules** – Alerting rules and recording rules for Prometheus.
+- **Ingress** – Configuration for exposing monitoring services.
+
+### **Usage:**
+1. Install Prometheus using the provided Helm chart:
+   ```sh
+   helm install prometheus ./Infra-tools/prometheus-chart
+   ```
+
+2. Access Grafana:
+   - Username/Password: Defined in the Grafana secret.
+   - Access URL: `http://<grafana-url>`
+
+3. View Metrics in Grafana:
+   - Use pre-configured dashboards for Kubernetes components.
+
+
+### **Ingress NGINX**
+The `Infra-tools/ingress-nginx` directory contains configurations for setting up NGINX as an ingress controller for Kubernetes.
+
+#### **Key Components:**
+- **Controller** – NGINX controller deployment for managing external access to services.
+- **Service** – LoadBalancer or NodePort service configuration for exposing the NGINX controller.
+- **ConfigMap** – Custom NGINX configurations (timeouts, buffering, etc.).
+- **TLS** – Secure communication using TLS certificates.
+
+#### **Usage:**
+1. Install NGINX Ingress Controller using Helm:
+   ```sh
+   helm install ingress-nginx ./Infra-tools/ingress-nginx
+   ```
+
+2. Verify the deployment:
+   ```sh
+   kubectl get pods -n ingress-nginx
+   ```
+
+3. Create an Ingress resource to expose services:
+   ```yaml
+   apiVersion: networking.k8s.io/v1
+   kind: Ingress
+   metadata:
+     name: example-ingress
+     namespace: default
+   spec:
+     rules:
+     - host: example.com
+       http:
+         paths:
+         - path: /
+           pathType: Prefix
+           backend:
+             service:
+               name: example-service
+               port:
+                 number: 80
+   ```
+
+### **Prometheus Chart**
+The `Infra-tools/prometheus-chart` directory includes configurations for setting up Prometheus and Grafana for monitoring and alerting.
+
+#### **Key Components:**
+- **prometheus-windows-exporter** – Prometheus exporter for monitoring Windows-based nodes.
+- **alertmanager** – Configuration for handling alerts from Prometheus.
+- **grafana** – Dashboard configurations for monitoring Kubernetes clusters.
+- **exporters** – Exporter configurations for Kubernetes components like API Server, Scheduler, etc.
+- **thanos-ruler** – Configuration for Thanos Ruler to extend Prometheus monitoring capabilities.
+
+#### **Usage:**
+1. Install Prometheus using the provided Helm chart:
+   ```sh
+   helm install prometheus ./Infra-tools/prometheus-chart
+   ```
+
+2. Access Grafana:
+   - Username/Password: Defined in the Grafana secret.
+   - Access URL: `http://<grafana-url>`
+
+3. View Metrics in Grafana:
+   - Use pre-configured dashboards for Kubernetes components.
